@@ -1,0 +1,92 @@
+//https://voltiq.ru/wiki/arduino-and-com-port/
+/*
+Arduino и Serial COM-порт – реализация протокола обмена
+
+В этой короткой статье мы разберём аспекты приёма команд из последовательного COM порта при помощи платы Arduino и научимся их обрабатывать. Хотя эта задача не является особо сложной, она может вызвать сложности у многих новичков.
+
+Итак, наша задача поэтапно:
+
+принять данные в буфер Serial.read()
+обработать данные, то есть разделить буфер на составляющие протокола
+обработать команды платой (мы будем зажигать и гасить светодиод)
+Мы будем использовать нехитрый протокол:
+
+unitID – номер устройства, по которому можно обратиться к нему
+command – сама команда
+data – данные для программы, если необходимы
+Итак, вот и код:
+*/
+
+//---------------------------------------------------------------------------------------------------------------
+
+#include <string.h>
+ 
+char unitID_in[10];
+char command_in[10];
+char data_in[100];
+ 
+void setup() {
+  // открываем порт 
+  Serial.begin(9600); 
+}
+ 
+void loop() {         
+ 
+  int i=0;
+  char buffer[100];
+ 
+//если есть данные - считаем их
+  if(Serial.available()){
+     delay(100);
+ 
+//сохраним прочитанное в буфер
+     while( Serial.available() && i< 99) { buffer[i++] = Serial.read(); } //закрываем массив buffer[i++]=''; } //если вдруг буфер наполнен if(i>0){  
+ 
+//разобьем его на части, отделенные запятой
+    sscanf(buffer, "%[^','],%[^','],%s", &unitID_in, &command_in, &data_in);
+ 
+  }
+ 
+//Исполнительная часть программы
+//Проверяем, к какому устройству пришли данные
+ 
+//Тестовое устройство 001
+    if ((String)unitID_in == "001"){  //test serial read
+      Serial.print("001,arduino recive: unit ");
+      Serial.print(unitID_in);
+      Serial.print("n");
+      Serial.print("command: ");
+      Serial.print(command_in);
+      Serial.print("n");
+      Serial.print("data: ");
+      Serial.print(data_in);      
+      Serial.print("n");
+      unitID_in [0] = ''; 
+      command_in [0] = '';            
+    }
+ 
+//пример выполнения команды устройством 013
+     if ((String)unitID_in == "013"){
+ 
+      if ((String)command_in == "on"){
+          digitalWrite(13, HIGH);}
+      if ((String)command_in == "off"){
+          digitalWrite(13, LOW);}   
+ 
+      Serial.print("001,arduino recive: unit ");
+      Serial.print(unitID_in);
+      Serial.print(" command ");
+      Serial.print(command_in);
+      Serial.print("n");
+      unitID_in [0] = '';
+      command_in [0] = '';            
+    }
+}
+
+/*
+
+Для разбора строки используется функция sscanf, которая, несмотря на кучу плюсов, имеет большой и жирный минус – занимает много программного места.
+
+Таким образом, теперь вы знаете, как организовать «цивилизованное» общение ПК с платой Arduino.
+
+*/
